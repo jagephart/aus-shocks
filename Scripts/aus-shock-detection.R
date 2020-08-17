@@ -1,6 +1,7 @@
 # TITLE: aus-shock-detection
 
 # Load packages
+library(tidyverse)
 
 # Source functions
 source("Scripts/functions.R")
@@ -9,8 +10,6 @@ source("Scripts/functions.R")
 df <- read.csv("Data/NSWcephaggregate.csv")
 
 # Check for shocks
-prod_shocks <- shockid(df$ProductionTOTAL)
-df$Year[prod_shocks$shock.event == 1]
+prod_shocks <- shock.analysis(df, ts.col.name = "ProductionTOTAL")
 
-val_shocks <- shockid(df$ValueTOTAL)
-df$Year[val_shocks$shock.event == 1]
+val_shocks <- shock.analysis(df, ts.col.name = "ValueTOTAL")
