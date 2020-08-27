@@ -24,6 +24,10 @@ shock.analysis <- function(dat, ts.col.name, ave.window = 5){
   # Rename column with the time series data we are running the shock analysis on
   colnames(dat)[colnames(dat) == ts.col.name] <- "ts.col"
   
+  # Initialize columns
+  dat$move.ave <- NA
+  dat$recovery.time <- NA
+  
   # Calculate the moving average for the specified window width
   for(i in ave.window:nrow(dat)){
     dat$move.ave[i] <- mean(dat$ts.col[(i-4):i]) 
@@ -39,6 +43,7 @@ shock.analysis <- function(dat, ts.col.name, ave.window = 5){
     mutate(shock.magnitude = ifelse(shock.event == 1, ts.col - move.ave, NA))
   
   # Calculate the recovery time (only relevant for negative shocks)
+  
   for(i in 2:nrow(dat)){
     if(dat$shock.event[i] == 1 & dat$residual[i] < 0){
       dat$recovery.time[i] <- min(which(dat$move.ave[i:nrow(dat)] > dat$move.ave[i]))-1
