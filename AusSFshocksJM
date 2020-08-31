@@ -3,8 +3,7 @@ library(dplyr)
 library(data.table)
 library(tidyverse)
 
-# Run below function
-# Functions
+######## Shock Functions
 shock.id <- function(dat, thresh=0.35){
   # dat is your time series data and threshold is the threshold you want for Cook's D (defaulted to 0.35)
   outt <- array(dim=c(length(dat), 3))
@@ -30,6 +29,10 @@ shock.analysis <- function(dat, ts.col.name, ave.window = 5){
   # Rename column with the time series data we are running the shock analysis on
   colnames(dat)[colnames(dat) == ts.col.name] <- "ts.col"
   
+  # Initialize columns
+  dat$move.ave <- NA
+  dat$recovery.time <- NA
+  
   # Calculate the moving average for the specified window width
   for(i in ave.window:nrow(dat)){
     dat$move.ave[i] <- mean(dat$ts.col[(i-4):i]) 
@@ -45,6 +48,7 @@ shock.analysis <- function(dat, ts.col.name, ave.window = 5){
     mutate(shock.magnitude = ifelse(shock.event == 1, ts.col - move.ave, NA))
   
   # Calculate the recovery time (only relevant for negative shocks)
+  
   for(i in 2:nrow(dat)){
     if(dat$shock.event[i] == 1 & dat$residual[i] < 0){
       dat$recovery.time[i] <- min(which(dat$move.ave[i:nrow(dat)] > dat$move.ave[i]))-1
@@ -56,7 +60,7 @@ shock.analysis <- function(dat, ts.col.name, ave.window = 5){
   return(dat)
 }
 
-#Load data. Change this to your directory as needed
+###### Load data. Change this to your directory as needed
 data <- read.csv("~/Postdoc/Projects/Shocks/final_AusShocksData.csv")
 
 str(data) #check data form
@@ -77,9 +81,9 @@ Vic <- subset(data, Jurisdiction == "Vic")
 WA <- subset(data, Jurisdiction == "WA")
 
 
-########                 AGGREGATION                       #####################
+########                     AGGREGATIONS                       #####################
 
-############## NSW Cephalaopod aggregation 
+############## EXAMPLE TIME SERIES: NSW Cephalaopod aggregation 
 
 # subset species
 cephNSW <- subset(NSW, Species == "octopus" | Species == "cuttlefish" | Species == "squid")
@@ -93,14 +97,6 @@ cephNSW_val <- cephNSW %>%
 head(cephNSW_val)
 df <- cephNSW_val      #converts current data into 'df' for function 
 
-
-###### Trying to play around with dataframe so code works
-df$X <- c('1','2','3','4','5', '6', '7', '8', '9', '10',                      
-          '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 
-          '21','22','23','24','25', '26', '27', '28', '29', '30')
-df$X <- as.integer(df$X) 
-df$ValueTOTAL <- as.numeric(df$ValueTOTAL) 
-df$ProductionTOTAL <- as.numeric(df$ProductionTOTAL) 
 
 str(df)
 #tibble [30 x 4] (S3: tbl_df/tbl/data.frame)
@@ -117,19 +113,6 @@ prod_shocks
 
 write.csv(prod_shocks, "c:/R/prod_shockscephNSW.csv", row.names = FALSE)  #Saving as excel doc
 
-
-#Error: Assigned data `*vtmp*` must be compatible with existing data.
-#x Existing data has 30 rows.
-#x Assigned data has 5 rows.
-#i Only vectors of size 1 are recycled.
-#Run `rlang::last_error()` to see where the error occurred.
-#In addition: Warning message:
-#  Error: Assigned data `*vtmp*` must be compatible with existing data.
-#x Existing data has 30 rows.
-#x Assigned data has 5 rows.
-#i Only vectors of size 1 are recycled.
-
-
 #Value
 val_shocks <- shock.analysis(df, ts.col.name = "ValueTOTAL")
 val_shocks
@@ -137,7 +120,7 @@ val_shocks
 write.csv(val_shockss, "c:/R/val_shockscephNSW.csv", row.names = FALSE)
 
 
-############## SA wildcaught  
+############## EXAMPLE TIME SERIES: SA wildcaught  
 
 # seperate into species
 wildcaptureSA <- subset(SA, Species == "crustaceans_total" | Species == "molluscs_total" | Species == "fish_total" 
@@ -154,25 +137,7 @@ wildcaptureSA_val <- wildcaptureSA %>%
 
 head(wildcaptureSA_val)
 df <- wildcaptureSA_val      #converts current into 'df' for shock function
-
-
-df$X <- c('1','2','3','4','5', '6', '7', '8', '9', '10',                     
-          '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 
-          '21','22','23','24','25', '26', '27', '28', '29', '30')
-df <- df[c("X", "Year", "ValueTOTAL", "ProductionTOTAL")]
-
-df$X <- as.integer(df$X) 
-df$ValueTOTAL <- as.numeric(df$ValueTOTAL) 
-df$ProductionTOTAL <- as.numeric(df$ProductionTOTAL) 
-
-
-
 str(df)
-##tibble [30 x 3] (S3: tbl_df/tbl/data.frame)
-#$ Year           : int [1:30] 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 ...
-#$ ValueTOTAL     : num [1:30] 1126 1437 1359 1562 2337 ...
-#$ ProductionTOTAL: num [1:30] 527 555 579 597 1190 ...
-
 
 
 # Check for shocks
@@ -188,10 +153,9 @@ val_shocks
 write.csv(val_shockss, "c:/R/val_shockswildcaptureSA.csv", row.names = FALSE)
 
 
+###########         DISAGGREGAGATED          ############### 
 
-########### Example of disaggregated time series 
-
-# orange_roughy
+######## EXAMPLE TIME SERIES: orange_roughy
 
 # subsetting jurisdiction and species
 set_orange_roughyCM <- subset(cwealth, Species == "set_orange_roughy" )     #seperate into species
@@ -213,4 +177,3 @@ val_shocks <- shock.analysis(df, ts.col.name = "ValueAUD")
 val_shocks
 
 write.csv(val_shockss, "c:/R/val_shocksOrangeRoughy.csv", row.names = FALSE)
-
